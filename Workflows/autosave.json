@@ -1,21 +1,60 @@
 {
   "id": "autosave",
   "title": "Autosave",
-  "updatedAt": 1778866909645,
+  "updatedAt": 1779125914546,
   "state": {
-    "last_node_id": 33,
-    "last_link_id": 27,
+    "last_node_id": 36,
+    "last_link_id": 28,
     "nodes": [
       {
-        "id": 24,
+        "id": 35,
         "type": "basic/code",
         "pos": [
-          570,
-          26
+          444,
+          286
         ],
         "size": [
-          239.16002655029297,
-          110.50001525878906
+          264,
+          122
+        ],
+        "flags": {},
+        "order": 2,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "in1",
+            "type": "any",
+            "link": 28
+          },
+          {
+            "name": "in2",
+            "type": "any",
+            "link": null
+          }
+        ],
+        "outputs": [
+          {
+            "name": "out",
+            "type": "any",
+            "links": null
+          }
+        ],
+        "properties": {
+          "code": "# Read file",
+          "vtab": {},
+          "stdout": ""
+        }
+      },
+      {
+        "id": 34,
+        "type": "basic/code",
+        "pos": [
+          103,
+          283
+        ],
+        "size": [
+          277,
+          138
         ],
         "flags": {},
         "order": 0,
@@ -32,29 +71,27 @@
             "name": "out",
             "type": "any",
             "links": [
-              27
+              28
             ],
             "slot_index": 0
           }
         ],
         "properties": {
-          "code": "import time",
-          "vtab": {
-            "time": "<module 'time' (built-in)>"
-          },
+          "code": "import os",
+          "vtab": {},
           "stdout": ""
         }
       },
       {
-        "id": 33,
+        "id": 36,
         "type": "basic/code",
         "pos": [
-          857,
-          58
+          835,
+          200
         ],
         "size": [
-          337,
-          151
+          300,
+          220
         ],
         "flags": {},
         "order": 1,
@@ -62,11 +99,6 @@
         "inputs": [
           {
             "name": "in1",
-            "type": "any",
-            "link": 27
-          },
-          {
-            "name": "in2",
             "type": "any",
             "link": null
           }
@@ -79,20 +111,18 @@
           }
         ],
         "properties": {
-          "code": "for i in range(100):\n    time.sleep(1)\n    print(f\"{i} seconds have passed\")",
-          "vtab": {
-            "i": 99
-          },
-          "stdout": "0 seconds have passed\n1 seconds have passed\n2 seconds have passed\n3 seconds have passed\n4 seconds have passed\n5 seconds have passed\n6 seconds have passed\n7 seconds have passed\n8 seconds have passed\n9 seconds have passed\n10 seconds have passed\n11 seconds have passed\n12 seconds have passed\n13 seconds have passed\n14 seconds have passed\n15 seconds have passed\n16 seconds have passed\n17 seconds have passed\n18 seconds have passed\n19 seconds have passed\n20 seconds have passed\n21 seconds have passed\n22 seconds have passed\n23 seconds have passed\n24 seconds have passed\n25 seconds have passed\n26 seconds have passed\n27 seconds have passed\n28 seconds have passed\n29 seconds have passed\n30 seconds have passed\n31 seconds have passed\n32 seconds have passed\n33 seconds have passed\n34 seconds have passed\n35 seconds have passed\n36 seconds have passed\n37 seconds have passed\n38 seconds have passed\n39 seconds have passed\n40 seconds have passed\n41 seconds have passed\n42 seconds have passed\n43 seconds have passed\n44 seconds have passed\n45 seconds have passed\n46 seconds have passed\n47 seconds have passed\n48 seconds have passed\n49 seconds have passed\n50 seconds have passed\n51 seconds have passed\n52 seconds have passed\n53 seconds have passed\n54 seconds have passed\n55 seconds have passed\n56 seconds have passed\n57 seconds have passed\n58 seconds have passed\n59 seconds have passed\n60 seconds have passed\n61 seconds have passed\n62 seconds have passed\n63 seconds have passed\n64 seconds have passed\n65 seconds have passed\n66 seconds have passed\n67 seconds have passed\n68 seconds have passed\n69 seconds have passed\n70 seconds have passed\n71 seconds have passed\n72 seconds have passed\n73 seconds have passed\n74 seconds have passed\n75 seconds have passed\n76 seconds have passed\n77 seconds have passed\n78 seconds have passed\n79 seconds have passed\n80 seconds have passed\n81 seconds have passed\n82 seconds have passed\n83 seconds have passed\n84 seconds have passed\n85 seconds have passed\n86 seconds have passed\n87 seconds have passed\n88 seconds have passed\n89 seconds have passed\n90 seconds have passed\n91 seconds have passed\n92 seconds have passed\n93 seconds have passed\n94 seconds have passed\n95 seconds have passed\n96 seconds have passed\n97 seconds have passed\n98 seconds have passed\n99 seconds have passed\n"
+          "code": "Model 1",
+          "vtab": {},
+          "stdout": ""
         }
       }
     ],
     "links": [
       [
-        27,
-        24,
+        28,
+        34,
         0,
-        33,
+        35,
         0,
         "any"
       ]
