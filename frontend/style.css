@@ -2,23 +2,148 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  height: 100%;
   background: #1e1e1e;
   font-family: sans-serif;
 }
 
 #graph {
   display: block;
+  position: absolute;
+  top: 0;
+  left: 260px;
+  width: calc(100% - 260px);
+  height: 100%;
+  transition: left 0.2s ease, width 0.2s ease;
 }
 
-#toolbar {
+body.shelf-collapsed #graph {
+  left: 54px;
+  width: calc(100% - 54px);
+}
+
+#shelfMenu {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 10;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 260px;
+  min-width: 54px;
+  max-width: 320px;
+  background: #141414;
+  color: #eee;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 30;
+  transition: width 0.2s ease;
+}
+
+#shelfMenu.collapsed {
+  width: 54px;
+}
+
+.shelf-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 10px;
+  background: #181818;
+  user-select: none;
+}
+
+.shelf-selected {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+#shelfMenu.collapsed .shelf-selected {
+  display: none;
+}
+
+.shelf-menu-header button {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  border: none;
+  background: transparent;
+  color: #ccc;
+  cursor: pointer;
+  padding: 0;
+}
+
+.shelf-menu-items {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 8px;
+  overflow: auto;
+}
+
+#shelfMenu.collapsed .shelf-menu-items {
+  display: flex;
+}
+
+.shelf-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#shelfMenu.collapsed .shelf-menu-item {
+  justify-content: center;
+}
+
+.shelf-menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.shelf-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #1f1f1f;
+  font-size: 16px;
+}
+
+.shelf-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.2s ease, width 0.2s ease;
+}
+
+.shelf-menu-content {
+  display: none;
+  flex: 1;
+  padding: 10px;
+  background: #101010;
+  border-top: 1px solid #222;
+  overflow: auto;
+  font-size: 13px;
+  color: #c6c6c6;
+}
+
+#shelfMenu:not(.collapsed) .shelf-menu-content {
+  display: block;
 }
 
 button {
-  padding: 8px 12px;
-  margin-right: 5px;
   cursor: pointer;
+}
+
+#shelfMenu.collapsed .shelf-menu-content {
+  display: none;
 }

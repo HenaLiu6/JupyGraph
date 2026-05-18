@@ -1,15 +1,35 @@
 import { initDOMLayer } from "./domLayer.js";
+import { initWorkflowManager } from "./workflowManagement.js";
 
 LiteGraph.clearRegisteredTypes();
+
+// Import and register CodeNode after clearing types
+const { CodeNode } = await import("./nodes/CodeNode.js");
+LiteGraph.registerNodeType("basic/code", CodeNode);
+
 const canvasEl = document.getElementById("graph");
 
 const graph = new LGraph();
 const canvas = new LGraphCanvas(canvasEl, graph);
 
-
+const workflowManager = initWorkflowManager(wsClient, graph);
 
 graph.start();
 initDOMLayer(canvas, graph);
+window.workflowManager = workflowManager;
+
+async function loadLastWorkflow() {
+  try {
+    await workflowManager.loadLastWorkflow();
+  } catch (error) {
+    console.warn("Failed to load last workflow:", error);
+  }
+}
+
+loadLastWorkflow();
+window.setInterval(() => {
+  workflowManager.saveCurrentWorkflow().catch(() => {});
+}, 5000);
 
 
 
@@ -41,6 +61,7 @@ function addNode() {
   const node = LiteGraph.createNode("basic/code");
   node.pos = [200, 200];
   graph.add(node);
+  workflowManager.scheduleSave();
 }
 
 // =========================
@@ -90,11 +111,17 @@ function runGraph() {
 // Receive results
 // =========================
 wsClient.onMessage = (data) => {
-  if (data.type === "done") {
+  if (data.type === "done" || data.type === "node.update") {
     for (let node of graph._nodes) {
       const state = data.nodeStates[node.id];
       if (state) {
-        node.properties.output = JSON.stringify(state);
+        if (state.vtab) {
+          node.properties.vtab = state.vtab;
+        }
+        if (typeof state.stdout !== 'undefined') {
+          node.properties.stdout = state.stdout;
+        }
+        if (node.updateDisplay) node.updateDisplay();
       }
     }
 
@@ -141,5 +168,12 @@ graph.onNodeAction = function(actionType, node) {
 // =========================
 // UI bindings
 // =========================
-document.getElementById("runBtn").onclick = runGraph;
-document.getElementById("addNodeBtn").onclick = addNode;
+const runBtn = document.getElementById("runBtn");
+if (runBtn) {
+  runBtn.onclick = runGraph;
+}
+
+const addNodeBtn = document.getElementById("addNodeBtn");
+if (addNodeBtn) {
+  addNodeBtn.onclick = addNode;
+}

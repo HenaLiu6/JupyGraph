@@ -1,110 +1,183 @@
 import { getDOMLayer } from "../domLayer.js";
+import { CodeField } from "./Components/CodeField.js";
+import { ActionButtons } from "./Components/ActionButtons.js";
+import { ToggleButtons } from "./Components/ToggleButtons.js";
+import { OutputPanel } from "./Components/OutputPanel.js";
 
-// CodeNode.js
 function CodeNode() {
-    this.addInput("in", "any");
+    this.addInput("in1", "any");
     this.addOutput("out", "any");
-    this.properties = { code: "x = 2\nprint(x*x)" };
+    this.inputCount = 1;
+    this.properties = { code: "x = 2\nprint(x*x)", vtab: {}, stdout: "" };
     this.size = [300, 220];
+    this.displayMode = 'outputs';
+
+    this.codeField = new CodeField(this.properties.code, code => {
+        this.properties.code = code;
+        if (window.workflowManager && typeof window.workflowManager.scheduleSave === 'function') {
+            window.workflowManager.scheduleSave();
+        }
+    });
+    this.actionButtons = new ActionButtons(action => {
+        if (this.graph && this.graph.onNodeAction) {
+            this.graph.onNodeAction(action, this);
+        }
+    });
+    this.toggleButtons = new ToggleButtons(mode => this.toggleDisplay(mode));
+    this.outputPanel = new OutputPanel(6, 16);
+    this.collapsedPreview = this.createCollapsedPreview();
+
+    this.onDrawBackground = function() {
+        this.updateCollapsedState();
+    };
 
     this.initUI();
 }
+
+CodeNode.prototype.createCollapsedPreview = function() {
+    const preview = document.createElement("div");
+    Object.assign(preview.style, {
+        position: "absolute",
+        left: "5px",
+        width: "200px",
+        color: "#0f0",
+        fontFamily: "monospace",
+        fontSize: "10px",
+        padding: "6px",
+        overflowY: "auto",
+        display: "none",
+        pointerEvents: "auto",
+        whiteSpace: "pre-wrap",
+        lineHeight: "16px",
+        boxSizing: "border-box",
+        bottom: "-30px"
+    });
+    return preview;
+};
 
 CodeNode.prototype.initUI = function() {
     this.dom = document.createElement("div");
     Object.assign(this.dom.style, { pointerEvents: "none", position: "absolute", zIndex: 10 });
 
-    // Textarea Setup
-    this.codeArea = document.createElement("textarea");
-    this.codeArea.value = this.properties.code;
-    
-    Object.assign(this.codeArea.style, {
-        position: "absolute",
-        resize: "none",
-        background: "#111",
-        color: "#0f0",
-        border: "1px solid #444",
-        fontFamily: "monospace",
-        fontSize: "12px",
-        padding: "6px",
-        zIndex: 10,
-        pointerEvents: "auto",
-        width: "calc(100% - 25px)",
-        height: "calc(100% - 90px)",
-        left: "5px",
-        top: "60px",
-    });
+    this.dom.appendChild(this.codeField.getElement());
+    this.dom.appendChild(this.actionButtons.getElement());
+    this.dom.appendChild(this.toggleButtons.getElement());
+    this.dom.appendChild(this.outputPanel.getElement());
+    this.dom.appendChild(this.collapsedPreview);
 
+    this.dom.onmouseenter = () => this.actionButtons.getElement().style.opacity = 1;
+    this.dom.onmouseleave = () => this.actionButtons.getElement().style.opacity = 0;
 
-    this.codeArea.oninput = () => { this.properties.code = this.codeArea.value; };
-
-    // Buttons Container
-    this.buttons = document.createElement("div");
-    Object.assign(this.buttons.style, {
-        position: "absolute",
-        top: "4px",
-        right: "4px",
-        display: "flex",
-        gap: "4px",
-        opacity: 0,
-        transition: "opacity 0.2s",
-        pointerEvents: "auto"
-    });
-
-    // Setup Buttons via a simple loop to keep it clean
-    const btnConfigs = [
-        { icon: "▶", color: "#e1f5fe", action: "run_context" },
-        { icon: "P", color: "#fff9c4", action: "run_persistent" },
-        { icon: "^", color: "#ffebee", action: "run_connected" }
-    ];
-
-    btnConfigs.forEach(cfg => {
-        const btn = this.createBaseButton(cfg.icon, cfg.color);
-        btn.onclick = () => {
-            if (this.graph && this.graph.onNodeAction) {
-                this.graph.onNodeAction(cfg.action, this);
-            }
-        };
-    });
-    this.dom.onmouseenter = () => this.buttons.style.opacity = 1;
-    this.dom.onmouseleave = () => this.buttons.style.opacity = 0;
-
-    this.dom.appendChild(this.codeArea);
-    this.dom.appendChild(this.buttons);
+    this.toggleButtons.setActive(this.displayMode);
+    this.outputPanel.setVisible(true);
+    this.outputPanel.setText(this.properties.stdout);
+    this.updateCollapsedState();
 };
 
-/**
- * Interface Helper: Creates a button with base styles and unique color.
- */
-CodeNode.prototype.createBaseButton = function(icon, bgColor) {
-    const btn = document.createElement("button");
-    btn.textContent = icon;
-    
-    Object.assign(btn.style, {
-        width: "25px",
-        height: "25px",
-        fontSize: "12px",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        border: "none",
-        borderRadius: "3px",
-        transition: "background 0.2s",
-        backgroundColor: bgColor // Added color as a parameter for cleanliness
-    });
+CodeNode.prototype.toggleDisplay = function(mode) {
+    if (this.displayMode === mode) {
+        this.displayMode = null;
+        this.outputPanel.setVisible(false);
+        this.toggleButtons.setActive(null);
+    } else {
+        this.displayMode = mode;
+        this.outputPanel.setVisible(true);
+        this.toggleButtons.setActive(mode);
+        this.updateDisplay();
+    }
+};
 
-    this.buttons.appendChild(btn);
-    return btn; 
+CodeNode.prototype.updateDisplay = function() {
+    let text = "";
+    if (this.displayMode === 'outputs') {
+        text = this.properties.stdout || "";
+    } else if (this.displayMode === 'vtable') {
+        text = JSON.stringify(this.properties.vtab, null, 2) || "{}";
+    }
+    this.outputPanel.setText(text);
+    this.updateCollapsedState();
+};
+
+CodeNode.prototype.updateCollapsedState = function() {
+    const collapsed = this.collapsed || (this.flags && this.flags.collapsed);
+    const showPreview = Boolean(collapsed);
+
+    this.codeField.getElement().style.display = showPreview ? "none" : "block";
+    this.actionButtons.getElement().style.display = showPreview ? "none" : "flex";
+    this.toggleButtons.getElement().style.display = showPreview ? "none" : "flex";
+    this.outputPanel.setVisible(!showPreview && this.displayMode !== null);
+    this.collapsedPreview.style.display = showPreview ? "block" : "none";
+
+    if (showPreview) {
+        const vtab = this.properties.vtab || {};
+        const functions = Object.keys(vtab).filter(key => {
+            const val = vtab[key];
+            return typeof val === 'string' && val.startsWith('<function ');
+        }).map(key => {
+            const match = vtab[key].match(/^<function (\w+)/);
+            return match ? match[1] : key;
+        });
+        const text = functions.length ? functions.join('\n') : '(no function declarations)';
+        this.collapsedPreview.textContent = text;
+        const lineCount = text.split('\n').length;
+        const height = Math.max(20, lineCount * 16 + 12);
+        this.collapsedPreview.style.height = `${height}px`;
+        this.collapsedPreview.style.bottom = `-${height + 10}px`;
+    }
+};
+
+CodeNode.prototype.ensureOpenInput = function() {
+    const hasOpenInput = this.inputs ? this.inputs.some(input => input.link == null) : false;
+    if (!hasOpenInput) {
+        const prevSize = this.size ? [this.size[0], this.size[1]] : null;
+        this.inputCount += 1;
+        this.addInput(`in${this.inputCount}`, "any");
+        if (prevSize) {
+            this.size = prevSize;
+        }
+        if (this.graph) {
+            this.graph.setDirtyCanvas(true);
+        }
+    }
+};
+
+CodeNode.prototype.onConnectInput = function() {
+    this.ensureOpenInput();
+};
+
+CodeNode.prototype.onDisconnectInput = function() {
+};
+
+CodeNode.prototype.onConnectionsChange = function() {
+    this.ensureOpenInput();
+};
+
+CodeNode.prototype.extractFunctionDeclarations = function(code) {
+    const lines = code.split("\n");
+    const declarations = [];
+    const declarationRegex = /^\s*function\s+[A-Za-z_$][\w$]*\s*\([^)]*\)/;
+    const expressionRegex = /^\s*[A-Za-z_$][\w$]*\s*=\s*function\s*\([^)]*\)/;
+    const arrowRegex = /^\s*[A-Za-z_$][\w$]*\s*=\s*\(?[^)]*\)?\s*=>\s*\{/;
+
+    for (const line of lines) {
+        if (declarationRegex.test(line) || expressionRegex.test(line) || arrowRegex.test(line)) {
+            declarations.push(line.trim());
+        }
+    }
+    return declarations;
 };
 
 CodeNode.prototype.onAdded = function() {
-  getDOMLayer().appendChild(this.dom);
+    if (this.codeField && this.properties && typeof this.properties.code === "string") {
+        this.codeField.setValue(this.properties.code);
+    }
+    this.ensureOpenInput();
+    getDOMLayer().appendChild(this.dom);
 };
 
 CodeNode.prototype.onRemoved = function() {
-  this.dom.remove();
+    this.dom.remove();
 };
 
 CodeNode.title = "Code Node";
-LiteGraph.registerNodeType("basic/code", CodeNode);
+export { CodeNode };

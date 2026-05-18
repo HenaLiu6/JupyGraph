@@ -28,13 +28,17 @@ def update_graph_state(graph_json):
         else:
             # Add new node to the existing persistent map
             nodeMap[nid] = Node(nid, code, inputs)
-            # Link parents/outputs for this new node
-            nodeMap[nid].setParents()
 
     # Cleanup: Remove nodes from server memory that were deleted in UI
     keys_to_delete = [nid for nid in nodeMap if nid not in present_ids]
     for nid in keys_to_delete:
         del nodeMap[nid]
+
+    # Rebuild outputs/parent links after all nodes are present.
+    for node in nodeMap.values():
+        node.outputs = []
+    for node in nodeMap.values():
+        node.setParents()
 
 def invalidate_descendants(node_id):
     """
