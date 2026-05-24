@@ -165,6 +165,42 @@ graph.onNodeAction = function(actionType, node) {
   }
 };
 
+
+// =========================
+// Fix double click litegraph search box not closing
+// =========================
+let searchBoxVisible = false;
+
+function closeLiteGraphSearch() {
+  const box = canvas.search_box;
+  if (!box) return;
+
+  box.style.display = "none";
+  searchBoxVisible = false;
+}
+
+canvas.onMouseDown = function(e, localPos, _) {
+  const box = canvas.search_box;
+  if (!box) return;
+
+  if (box.style.display !== "none") {
+    if (searchBoxVisible) {
+      closeLiteGraphSearch();
+    }
+
+    searchBoxVisible = true;
+  } else {
+    searchBoxVisible = false;
+  }
+};
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeLiteGraphSearch();
+  }
+});
+
+
 // =========================
 // UI bindings
 // =========================
@@ -177,3 +213,28 @@ const addNodeBtn = document.getElementById("addNodeBtn");
 if (addNodeBtn) {
   addNodeBtn.onclick = addNode;
 }
+
+
+// =========================
+// Graph access points
+// =========================
+
+let activeNode = null;
+
+export function getActiveNode() {
+  return activeNode;
+}
+
+export function setActiveNode(node) {
+  activeNode = node;
+}
+
+canvas.onNodeSelected = (node) => {
+  setActiveNode(node);
+};
+
+canvas.onNodeDeselected = (node) => {
+  if (getActiveNode() === node) {
+    setActiveNode(null);
+  }
+};

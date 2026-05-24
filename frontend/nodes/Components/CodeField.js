@@ -1,14 +1,16 @@
-//----------------------
-// File: CodeField.js
-//----------------------
-export function CodeField(initialCode, onChange) {
-    this.container = document.createElement("div");
-    Object.assign(this.container.style, {
+// CodeField.js
+
+export function CodeField({
+    initialCode = "",
+    onChange = () => {},
+    language = "python",
+    style = {}
+} = {}) {
+    this.language = language;
+
+    // Container
+    const baseContainerStyle = {
         position: "absolute",
-        width: "calc(100% - 44px)",
-        height: "calc(100% - 90px)",
-        left: "38px",
-        top: "60px",
         overflow: "hidden",
         border: "1px solid #444",
         borderRadius: "4px",
@@ -17,10 +19,15 @@ export function CodeField(initialCode, onChange) {
         fontFamily: "monospace",
         fontSize: "12px",
         lineHeight: "18px"
-    });
+    };
+    this.container = document.createElement("div");
+    Object.assign(this.container.style, baseContainerStyle, style.container);
 
+
+    // Highlighted code
     this.highlight = document.createElement("pre");
-    this.highlight.className = "language-python";
+    this.highlight.className = `language-${language}`;
+
     Object.assign(this.highlight.style, {
         position: "absolute",
         top: 0,
@@ -37,11 +44,14 @@ export function CodeField(initialCode, onChange) {
     });
 
     this.code = document.createElement("code");
-    this.code.className = "language-python";
+    this.code.className = `language-${language}`;
     this.highlight.appendChild(this.code);
 
+
+    // Textarea
     this.textarea = document.createElement("textarea");
     this.textarea.value = initialCode;
+
     Object.assign(this.textarea.style, {
         position: "absolute",
         top: 0,
@@ -66,26 +76,37 @@ export function CodeField(initialCode, onChange) {
         zIndex: 1,
         pointerEvents: "auto"
     });
-    this.textarea.spellcheck = false;
 
+    this.textarea.spellcheck = false;
+    
     const update = () => {
         onChange(this.textarea.value);
         this._updateHighlight();
     };
 
     this.textarea.oninput = update;
+
     this.textarea.onscroll = () => {
         this.highlight.scrollTop = this.textarea.scrollTop;
         this.highlight.scrollLeft = this.textarea.scrollLeft;
     };
+
     this.textarea.onkeydown = (event) => {
         if (event.key === "Tab") {
             event.preventDefault();
+
             const start = this.textarea.selectionStart;
             const end = this.textarea.selectionEnd;
             const value = this.textarea.value;
-            this.textarea.value = value.substring(0, start) + "    " + value.substring(end);
-            this.textarea.selectionStart = this.textarea.selectionEnd = start + 4;
+
+            this.textarea.value =
+                value.substring(0, start) +
+                "    " +
+                value.substring(end);
+
+            this.textarea.selectionStart =
+            this.textarea.selectionEnd = start + 4;
+
             update();
         }
     };
@@ -95,12 +116,23 @@ export function CodeField(initialCode, onChange) {
     this._updateHighlight();
 }
 
-CodeField.prototype._updateHighlight = function() {
-    if (typeof Prism === "undefined" || !Prism.languages || !Prism.languages.python) {
-        this.code.textContent = this.textarea.value;
+CodeField.prototype._updateHighlight = function () {
+    const code = this.textarea.value;
+
+    if (
+        typeof Prism === "undefined" ||
+        !Prism.languages ||
+        !Prism.languages[this.language]
+    ) {
+        this.code.textContent = code;
         return;
     }
-    this.code.innerHTML = Prism.highlight(this.textarea.value, Prism.languages.python, "python");
+
+    this.code.innerHTML = Prism.highlight(
+        code,
+        Prism.languages[this.language],
+        this.language
+    );
 };
 
 CodeField.prototype.getElement = function() {
@@ -110,4 +142,8 @@ CodeField.prototype.getElement = function() {
 CodeField.prototype.setValue = function(code) {
     this.textarea.value = code;
     this._updateHighlight();
+};
+
+CodeField.prototype.getValue = function () {
+    return this.textarea.value;
 };

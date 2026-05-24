@@ -12,10 +12,19 @@ function CodeNode() {
     this.size = [300, 220];
     this.displayMode = 'outputs';
 
-    this.codeField = new CodeField(this.properties.code, code => {
-        this.properties.code = code;
-        if (window.workflowManager && typeof window.workflowManager.scheduleSave === 'function') {
-            window.workflowManager.scheduleSave();
+    this.codeField = new CodeField({
+        initialCode: this.properties.code,
+        onChange: (code) => {
+            this.setCode(code);
+        },
+        language: "python",
+        style: {
+            container: {
+                width: "calc(100% - 44px)", 
+                height: "calc(100% - 90px)", 
+                left: "38px", 
+                top: "60px",
+            }
         }
     });
     this.actionButtons = new ActionButtons(action => {
@@ -171,9 +180,32 @@ CodeNode.prototype.onAdded = function() {
     if (this.codeField && this.properties && typeof this.properties.code === "string") {
         this.codeField.setValue(this.properties.code);
     }
+
     this.ensureOpenInput();
-    getDOMLayer().appendChild(this.dom);
+    const layer = getDOMLayer();
+    if (layer && this.dom.parentNode !== layer) {
+        layer.appendChild(this.dom);
+    }
 };
+
+CodeNode.prototype.setCode = function(code) {
+    if (this.properties.code === code) return;
+    this.properties.code = code;
+
+    // Push to inline editor (setValue does not fire events, so no loop)
+    if (this.codeField) {
+        this.codeField.setValue(code);
+    }
+
+    if (this.graph) {
+        this.graph.setDirtyCanvas(true, true);
+    }
+
+    if (window.workflowManager && typeof window.workflowManager.scheduleSave === 'function') {
+        window.workflowManager.scheduleSave();
+    }
+};
+
 
 CodeNode.prototype.onRemoved = function() {
     this.dom.remove();
