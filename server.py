@@ -28,8 +28,8 @@ def send_node_update(websocket, loop, node_id, stdout, vtab):
         "type": "node.update",
         "nodeStates": {
             node_id: {
-                "stdout": stdout,
-                "vtab": {k: serialize_value(v) for k, v in (vtab or {}).items() if k != "__builtins__"}
+                "stdout": serialize_value(stdout),
+                "vtab": {k: serialize_value(v) for k, v in (vtab or {}).items() if k != "__builtins__"},
             }
         }
     }
@@ -57,19 +57,28 @@ async def handler(websocket):
             target_id = data["graph"].get("execute")
             if target_id:
                 await loop.run_in_executor(None, lambda: execute_graph(str(target_id), on_output=progress_callback))
-            
+            await send_results(websocket)
+            continue
+
         elif msg_type == "execute_persistent":
-            node = data["node"]
+            node_data = data["node"]
+            temp_node = Node(node_data["id"], node_data["code"], [])
             await loop.run_in_executor(None, lambda: execute_persistent(
-                Node(node["id"], node["code"], []),
+                temp_node,
                 on_output=progress_callback
             ))
+            send_node_update(websocket, loop, temp_node.id, temp_node.stdout, persistentState)
+            continue
 
-        # not sure what this should do differently
         elif msg_type == "execute_connected":
             target_id = data["graph"].get("execute")
             if target_id:
-                await loop.run_in_executor(None, lambda: execute_graph(str(target_id), on_output=progress_callback))
+                target_id_str = str(target_id)
+                if target_id_str in nodeMap:
+                    nodeMap[target_id_str].isCached = False
+                await loop.run_in_executor(None, lambda: execute_graph(target_id_str, on_output=progress_callback))
+            await send_results(websocket)
+            continue
 
         elif msg_type == "workflow.save":
             workflow = data.get("workflow", {})
@@ -129,8 +138,7 @@ async def handler(websocket):
 
         elif msg_type == "ping":
             await websocket.send(json.dumps({"type": "pong"}))
-
-        await send_results(websocket)
+            continue
 
 
 async def send_results(websocket):
@@ -147,8 +155,8 @@ async def send_results(websocket):
         "type": "done",
         "nodeStates": {
             nid: {
-                "vtab": {k: serialize_value(v) for k, v in node.vtab.items() if k != "__builtins__"},
-                "stdout": node.stdout
+                "vtab": {k: serialize_value(v) for k, v in getattr(node, 'vtab', {}).items() if k != "__builtins__"},
+                "stdout": serialize_value(node.stdout)
             } for nid, node in nodeMap.items()
         },
         "persistentState": {

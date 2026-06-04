@@ -8,7 +8,7 @@ function CodeNode() {
     this.addInput("in1", "any");
     this.addOutput("out", "any");
     this.inputCount = 1;
-    this.properties = { code: "x = 2\nprint(x*x)", vtab: {}, stdout: "" };
+    this.properties = { code: "x = 2\nprint(x*x)", vtab: {}, stdout: [] };
     this.size = [300, 220];
     this.displayMode = 'outputs';
 
@@ -33,7 +33,7 @@ function CodeNode() {
         }
     });
     this.toggleButtons = new ToggleButtons(mode => this.toggleDisplay(mode));
-    this.outputPanel = new OutputPanel(6, 16);
+    this.outputPanel = new OutputPanel(10, 16);
     this.collapsedPreview = this.createCollapsedPreview();
 
     this.onDrawBackground = function() {
@@ -79,7 +79,7 @@ CodeNode.prototype.initUI = function() {
 
     this.toggleButtons.setActive(this.displayMode);
     this.outputPanel.setVisible(true);
-    this.outputPanel.setText(this.properties.stdout);
+    this.outputPanel.setOutputs(this.properties.stdout);
     this.updateCollapsedState();
 };
 
@@ -97,13 +97,16 @@ CodeNode.prototype.toggleDisplay = function(mode) {
 };
 
 CodeNode.prototype.updateDisplay = function() {
-    let text = "";
+    let outputData = [];
+    
     if (this.displayMode === 'outputs') {
-        text = this.properties.stdout || "";
+        outputData = this.properties.stdout;
     } else if (this.displayMode === 'vtable') {
-        text = JSON.stringify(this.properties.vtab, null, 2) || "{}";
+        const text = JSON.stringify(this.properties.vtab || {}, null, 2) || "{}";
+        outputData = [{ type: "text", text }];
     }
-    this.outputPanel.setText(text);
+    
+    this.outputPanel.setOutputs(outputData);
     this.updateCollapsedState();
 };
 

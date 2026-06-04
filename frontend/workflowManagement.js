@@ -27,7 +27,9 @@ function sendRequest(type, payload = {}) {
 }
 
 function handleServerMessage(data) {
-  if (data && typeof data.requestId !== "undefined") {
+  if (!data) return;
+
+  if (typeof data.requestId !== "undefined") {
     const pending = pendingRequests.get(data.requestId);
     if (pending) {
       pendingRequests.delete(data.requestId);
@@ -106,8 +108,13 @@ function loadGraphState(state) {
 
   if (typeof graphRef.configure === "function") {
     graphRef.configure(state);
+
     // Call onAdded for all nodes after configure
     (graphRef._nodes || []).forEach((node) => {
+      if (node.outputPanel && node.stdout) {
+        node.outputPanel.setVisible(node.stdout.length > 0);  //TODO, this should not be here?
+        node.outputPanel.setOutputs(node.stdout);             //TODO, this should not be here?
+      }
       if (typeof node.onAdded === "function") {
         node.onAdded();
       }
@@ -124,8 +131,17 @@ function loadGraphState(state) {
     if (Array.isArray(nodeData.size)) {
       node.size = nodeData.size.slice();
     }
+    
+    // Restore the stdout array on the node object directly
+    node.stdout = nodeData.stdout || [];
     graphRef.add(node);
-    // Call onAdded after adding the node
+    
+    // Feed the restored array into your upgraded OutputPanel component
+    if (node.outputPanel) {
+      node.outputPanel.setVisible(node.stdout.length > 0);  //TODO, this should not be here?
+      node.outputPanel.setOutputs(node.stdout);             //TODO, this should not be here?
+    }
+
     if (typeof node.onAdded === "function") {
       node.onAdded();
     }

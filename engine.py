@@ -1,6 +1,10 @@
 import sys
 import traceback
 import io
+import threading
+
+from outputTypes import *
+from patches.displayPatches import _thread_local
 
 nodeMap = {}
 persistentState = {}
@@ -14,7 +18,7 @@ class Node(dict):
         self.outputs = []
 
         self.vtab = {}
-        self.stdout = ""
+        self.stdout = []
         self.isCached = False
 
     def setParents(self):
@@ -45,25 +49,22 @@ class Node(dict):
         return any(key in nodeMap[parent] for parent in self.inputs)
 
 
-def execute_graph(target_node_id, on_output=None):
+def execute_graph(target_node_id, on_output):
     target_id = str(target_node_id)
     node = nodeMap[target_id]
     _recursive_execute(node, on_output=on_output)
     sync_to_persistent(node)
 
 
-def execute_persistent(node, on_output=None):
-    def persistent_stdout(stdout_text):
+def execute_persistent(node, on_output):
+    node.stdout = []
+    def stdout(out_dict):
         if on_output:
-            on_output(node.id, stdout_text, persistentState)
+            node.stdout.append(out_dict)
+            on_output(node.id, node.stdout, persistentState)
 
-    stdout, _ = _execute_code(node.code, persistentState, on_stdout=persistent_stdout if on_output else None)
-    vtab = dict(persistentState)
-
-    # Update the node in nodeMap
-    if node.id in nodeMap:
-        nodeMap[node.id].stdout = stdout
-        nodeMap[node.id].vtab = vtab
+    _ = _execute_code(node.code, persistentState, on_stdout=stdout)
+    # node.vtab = dict(persistentState) # This adds the entire persistent state to the nodes vtable
 
 
 def _format_user_traceback():
@@ -81,22 +82,20 @@ def _format_user_traceback():
     return traceback.format_exc()
 
 
-def _execute_code(code, namespace, on_stdout=None):
+def _execute_code(code, namespace, on_stdout):
     class stdout_writer:
         def __init__(self, callback):
-            self.buffer = ""
             self.callback = callback
 
         def write(self, text):
-            if text is None:
+            if text is None: return
+            if text == '\n' or not text.strip():
                 return
-            self.buffer += str(text)
             if self.callback:
-                self.callback(self.buffer)
+                self.callback(text_output(text))
 
         def flush(self):
-            if self.callback:
-                self.callback(self.buffer)
+            pass
 
         def isatty(self):
             return False
@@ -105,36 +104,37 @@ def _execute_code(code, namespace, on_stdout=None):
     sys.stdout = stdout_writer(on_stdout)
     had_builtins = "__builtins__" in namespace
     namespace["__builtins__"] = __builtins__
+
+    _thread_local.callback = on_stdout
+
     try:
         exec(code, namespace, namespace)
-        stdout = sys.stdout.buffer
         error = False
     except Exception:
         error_text = _format_user_traceback()
-        current_output = sys.stdout.buffer
-        if current_output:
-            stdout = current_output + "\n" + error_text
-        else:
-            stdout = error_text
+        on_stdout(error_output(error_text))
         error = True
     finally:
         sys.stdout = old_stdout
         if not had_builtins:
             namespace.pop("__builtins__", None)
-    return stdout, error
 
-def _recursive_execute(node, on_output=None):
+    return error
+
+def _recursive_execute(node, on_output):
     if node.isCached:
         return
+    
     for parent in node.inputs:
         _recursive_execute(nodeMap[parent], on_output=on_output)
+    
+    node.stdout = []
+    node.vtab = {}
+    def node_stdout(out_dict):
+        node.stdout.append(out_dict)
+        on_output(node.id, node.stdout, node.vtab)
 
-    def node_stdout(stdout_text):
-        node.stdout = stdout_text
-        if on_output:
-            on_output(node.id, stdout_text, node.vtab)
-
-    node.stdout, _ = _execute_code(node.code, node, on_stdout=node_stdout if on_output else None)
+    _ = _execute_code(node.code, node, on_stdout=node_stdout)
     node.isCached = True
 
 def sync_to_persistent(target_node):
@@ -164,4 +164,4 @@ def reset():
     for n in nodeMap.values():
         n.isCached = False
         n.vtab = {}
-
+        n.stdout = []
