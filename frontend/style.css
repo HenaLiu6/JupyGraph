@@ -17,133 +17,343 @@ html, body {
   transition: left 0.2s ease, width 0.2s ease;
 }
 
-body.shelf-collapsed #graph {
-  left: 54px;
-  width: calc(100% - 54px);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ============================================
+   DARK THEME - SHELF MENU SHELL
+   ============================================ */
+
+:root {
+  --shelf-bg: #1e1e2e;
+  --shelf-border: #313244;
+  --shelf-header-bg: #181825;
+  --shelf-text: #cdd6f4;
+  --shelf-text-muted: #6c7086;
+  --shelf-text-dim: #45475a;
+  --shelf-hover: #313244;
+  --shelf-active: #45475a;
+  --shelf-accent: #89b4fa;
+  --shelf-accent-hover: #74c7ec;
+  --shelf-error-bg: #31111c;
+  --shelf-error-text: #f38ba8;
+  --shelf-input-bg: #313244;
+  --shelf-input-border: #45475a;
+  --shelf-folder-line: #45475a;
+  --shelf-file-bg: #181825;
+  --shelf-file-border: #313244;
 }
 
-#shelfMenu {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 260px;
-  min-width: 54px;
-  max-width: 320px;
-  background: #141414;
-  color: #eee;
+.shelf-menu {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  z-index: 30;
-  transition: width 0.2s ease;
+  height: 100%;
+  width: 260px;
+  min-width: 260px;
+  border-right: 1px solid var(--shelf-border);
+  background: var(--shelf-bg);
+  color: var(--shelf-text);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  box-sizing: border-box;
 }
 
-#shelfMenu.collapsed {
-  width: 54px;
+.shelf-menu.collapsed {
+  width: 44px;
+  min-width: 44px;
 }
 
+body.shelf-collapsed .shelf-menu-content,
+body.shelf-collapsed .shelf-selected {
+  display: none;
+}
+
+/* --- Header --- */
 .shelf-menu-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 10px;
-  background: #181818;
-  user-select: none;
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--shelf-border);
+  background: var(--shelf-header-bg);
+  flex-shrink: 0;
+  gap: 8px;
 }
 
 .shelf-selected {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex: 1;
+  gap: 8px;
+  font-weight: 600;
   min-width: 0;
+  overflow: hidden;
 }
 
-#shelfMenu.collapsed .shelf-selected {
-  display: none;
+.shelf-selected .shelf-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.shelf-menu-header button {
-  width: 28px;
-  height: 28px;
-  font-size: 14px;
+.shelf-icon {
+  font-size: 1.15em;
+  flex-shrink: 0;
+}
+
+.shelf-toggle {
+  background: none;
   border: none;
-  background: transparent;
-  color: #ccc;
   cursor: pointer;
-  padding: 0;
+  font-size: 1em;
+  padding: 4px 6px;
+  border-radius: 4px;
+  color: var(--shelf-text-muted);
+  flex-shrink: 0;
 }
 
+.shelf-toggle:hover {
+  background: var(--shelf-hover);
+  color: var(--shelf-text);
+}
+
+/* --- Items Bar --- */
 .shelf-menu-items {
-  display: none;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 8px;
-  overflow: auto;
-}
-
-#shelfMenu.collapsed .shelf-menu-items {
   display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border-bottom: 1px solid var(--shelf-border);
+  flex-shrink: 0;
 }
 
 .shelf-menu-item {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 10px;
-  padding: 10px;
-  border-radius: 10px;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
   cursor: pointer;
-  transition: background 0.15s ease;
+  border-radius: 6px;
+  text-align: left;
+  width: 100%;
+  font-size: 0.95em;
+  color: var(--shelf-text);
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-#shelfMenu.collapsed .shelf-menu-item {
-  justify-content: center;
-}
-
-.shelf-menu-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.shelf-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  background: #1f1f1f;
-  font-size: 16px;
-}
-
-.shelf-title {
-  flex: 1;
+.shelf-menu-item .shelf-title {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: opacity 0.2s ease, width 0.2s ease;
 }
 
-.shelf-menu-content {
+.shelf-menu-item:hover {
+  background: var(--shelf-hover);
+}
+
+.shelf-menu-item.active {
+  background: var(--shelf-active);
+  font-weight: 600;
+}
+
+.shelf-menu.collapsed .shelf-menu-item {
+  justify-content: center;
+  padding: 7px 0;
+}
+
+.shelf-menu.collapsed .shelf-menu-item .shelf-title {
   display: none;
+}
+
+/* --- Content Panel --- */
+.shelf-menu-content {
   flex: 1;
   padding: 10px;
-  background: #101010;
-  border-top: 1px solid #222;
-  overflow: auto;
-  font-size: 13px;
-  color: #c6c6c6;
+  overflow-y: auto;
+  min-width: 0;
 }
 
-#shelfMenu:not(.collapsed) .shelf-menu-content {
-  display: block;
+/* ============================================
+   WORKFLOW CREATOR
+   ============================================ */
+
+.workflow-creator {
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--shelf-border);
 }
 
-button {
+.workflow-creator-label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--shelf-text-muted);
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.workflow-creator-row {
+  display: flex;
+  gap: 6px;
+}
+
+.workflow-creator-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--shelf-input-border);
+  background: var(--shelf-input-bg);
+  color: var(--shelf-text);
+  border-radius: 4px;
+  font-size: 0.9em;
+  outline: none;
+}
+
+.workflow-creator-input:focus {
+  border-color: var(--shelf-accent);
+}
+
+.workflow-creator-input::placeholder {
+  color: var(--shelf-text-dim);
+}
+
+.workflow-creator-button {
+  padding: 6px 12px;
+  border: 1px solid var(--shelf-accent);
+  background: var(--shelf-accent);
+  color: #1e1e2e;
+  border-radius: 4px;
   cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-#shelfMenu.collapsed .shelf-menu-content {
+.workflow-creator-button:hover {
+  background: var(--shelf-accent-hover);
+  border-color: var(--shelf-accent-hover);
+}
+
+.workflow-creator-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   WORKFLOW TREE
+   ============================================ */
+
+.workflow-tree-container {
+  /* wrapper */
+}
+
+.workflow-folder-node {
+  margin: 2px 0;
+}
+
+.workflow-folder-node summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 3px 0;
+  user-select: none;
+  list-style: none;
+  color: var(--shelf-text);
+  font-size: 0.9em;
+}
+
+.workflow-folder-node summary::-webkit-details-marker {
   display: none;
+}
+
+.workflow-folder-node summary::before {
+  content: "▸ ";
+  display: inline-block;
+  transition: transform 0.15s;
+  color: var(--shelf-text-muted);
+}
+
+.workflow-folder-node[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.workflow-folder-contents {
+  padding-left: 14px;
+  border-left: 1px solid var(--shelf-folder-line);
+  margin-left: 5px;
+}
+
+.workflow-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 3px 0;
+}
+
+.workflow-file-button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 8px;
+  border: 1px solid var(--shelf-file-border);
+  background: var(--shelf-file-bg);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85em;
+  color: var(--shelf-text);
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-file-button:hover {
+  background: var(--shelf-hover);
+  border-color: var(--shelf-active);
+}
+
+.workflow-empty-state {
+  color: var(--shelf-text-muted);
+  font-style: italic;
+  padding: 8px 0;
+  font-size: 0.9em;
+}
+
+/* ============================================
+   PLACEHOLDER PANELS
+   ============================================ */
+
+.shelf-placeholder {
+  color: var(--shelf-text-muted);
+  text-align: center;
+  padding: 40px 12px;
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+
+.error {
+  color: var(--shelf-error-text);
+  padding: 8px;
+  background: var(--shelf-error-bg);
+  border-radius: 4px;
+  font-size: 0.85em;
 }

@@ -5,11 +5,15 @@ import websockets
 from graphLoader import *
 from engine import *
 from workflowManagement import (
+    CURRENT_WORKFLOW_ID,
     get_last_workflow_id,
+    get_saved_last_workflow_id,
     load_last_workflow,
     load_workflow,
     list_workflows,
     save_workflow,
+    set_last_workflow_id,
+    create_new_workflow
 )
 
 
@@ -82,8 +86,7 @@ async def handler(websocket):
 
         elif msg_type == "workflow.save":
             workflow = data.get("workflow", {})
-            workflow_id = workflow.get("id", "autosave")
-            title = workflow.get("title", workflow_id)
+            workflow_id = workflow.get("id", CURRENT_WORKFLOW_ID)
             state = workflow.get("state")
             if state is None:
                 await websocket.send(json.dumps({
@@ -92,7 +95,7 @@ async def handler(websocket):
                     "requestId": data.get("requestId"),
                 }))
             else:
-                saved = save_workflow(workflow_id, state, title)
+                saved = save_workflow(workflow_id, state)
                 await websocket.send(json.dumps({
                     "type": "workflow.saved",
                     "workflow": saved,
@@ -111,6 +114,8 @@ async def handler(websocket):
                     "requestId": data.get("requestId"),
                 }))
             else:
+                if workflow_id != CURRENT_WORKFLOW_ID:
+                    set_last_workflow_id(workflow_id)
                 await websocket.send(json.dumps({
                     "type": "workflow.loaded",
                     "workflow": loaded,
@@ -127,14 +132,31 @@ async def handler(websocket):
 
         elif msg_type == "workflow.get_last":
             last_id = get_last_workflow_id()
+            last_saved_id = get_saved_last_workflow_id()
             last_workflow = None
             if last_id:
                 last_workflow = load_workflow(last_id)
             await websocket.send(json.dumps({
                 "type": "workflow.last",
                 "workflow": last_workflow,
+                "selectedWorkflowId": last_saved_id,
                 "requestId": data.get("requestId"),
             }))
+        elif msg_type == "workflow.createnew":
+            title = data.get("title", "Untitled")
+            try:
+                new_workflow = create_new_workflow(title)
+                await websocket.send(json.dumps({
+                    "type": "workflow.created",
+                    "workflow": new_workflow,
+                    "requestId": data.get("requestId"),
+                }))
+            except Exception as e:
+                await websocket.send(json.dumps({
+                    "type": "workflow.error",
+                    "message": str(e),
+                    "requestId": data.get("requestId"),
+                }))
 
         elif msg_type == "ping":
             await websocket.send(json.dumps({"type": "pong"}))

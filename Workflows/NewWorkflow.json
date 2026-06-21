@@ -1,0 +1,57 @@
+{
+  "id": "NewWorkflow",
+  "title": "NewWorkflow",
+  "updatedAt": 1781872984915,
+  "state": {
+    "last_node_id": 1,
+    "last_link_id": 0,
+    "nodes": [
+      {
+        "id": 1,
+        "type": "basic/code",
+        "pos": [
+          429.3843827514647,
+          254.8361881103515
+        ],
+        "size": [
+          300,
+          220
+        ],
+        "flags": {},
+        "order": 0,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "in1",
+            "type": "any",
+            "link": null
+          }
+        ],
+        "outputs": [
+          {
+            "name": "out",
+            "type": "any",
+            "links": null
+          }
+        ],
+        "properties": {
+          "code": "x = 2\nprint(x*x*x)",
+          "vtab": {
+            "x": 2
+          },
+          "stdout": [
+            {
+              "type": "text",
+              "text": "8"
+            }
+          ]
+        }
+      }
+    ],
+    "links": [],
+    "groups": [],
+    "config": {},
+    "extra": {},
+    "version": 0.4
+  }
+}
