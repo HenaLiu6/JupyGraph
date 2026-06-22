@@ -3,7 +3,7 @@
 
 A New Paradigm in Integrated Development Environments
 
-![RockPaperScissorsExample](./GitAssets/JupyExample.mov)
+https://github.com/user-attachments/assets/636fd83c-1863-40a7-a6a6-c56aa6aec07f
 
 JupyGraph is a graph-based IDE designed to help users iterate on software, by having blocks of code be isolated into nodes that are connected together to create the program flow. With code separated into blocks, it is easy to replace or move sections of code, and the spatial position can be used to imply association. For example, instead of commenting out a section of code that needs to be replaced, a new node can be written to replace the old, and if you are unsure which solution was better, you can keep the old node next to the other as a quick drop-in replacement for the future.
 
