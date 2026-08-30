@@ -1,5 +1,7 @@
 # stolen from https://github.com/github/gitignore/blob/main/Python.gitignore
-
+test/
+Workflows/workflowManagement/
+GitAssets/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

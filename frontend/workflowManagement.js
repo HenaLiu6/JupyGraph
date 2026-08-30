@@ -176,7 +176,7 @@ export function initWorkflowManager(wsClient, graph) {
     scheduleSave,
     saveWorkflow,
     loadWorkflow,
-    listWorkflows,
+    listDirectory,
     createNewWorkflow,
     getCurrentWorkflowId,
     getCurrentWorkflowTitle,
@@ -219,12 +219,11 @@ export async function loadLastWorkflow() {
   return response;
 }
 
-/**
- * List all workflows on the server.
- */
-export async function listWorkflows() {
-  const response = await sendRequest("workflow.list");
-  return response.workflows || [];
+export async function listDirectory() {
+  console.log("Ran1.5")
+  const response = await sendRequest("directory.list");
+  console.log("Response")
+  return response.paths || [];
 }
 
 /**

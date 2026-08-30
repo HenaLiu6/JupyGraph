@@ -1,4 +1,4 @@
-import { listWorkflows, loadWorkflow } from "../../workflowManagement.js";
+import { listDirectory, loadWorkflow } from "../../workflowManagement.js";
 import { buildWorkflowCreator } from "./workflowCreator.js";
 
 // ─── Public metadata for the shelf menu ───
@@ -7,94 +7,100 @@ export const SHELF_ITEM = {
   title: "Files"
 };
 
-// ─── Tree builder ───
 
-function buildTree(workflows) {
-  const root = { dirs: {}, files: [] };
-  workflows.forEach((wf) => {
-    const segs = wf.relativePath.split("/");
-    let node = root;
-    segs.forEach((seg, i) => {
-      if (i === segs.length - 1) {
-        node.files.push({ ...wf, fileName: seg });
-      } else {
-        node.dirs[seg] = node.dirs[seg] || { dirs: {}, files: [] };
-        node = node.dirs[seg];
-      }
-    });
-  });
-  return root;
+function getName(path) {
+  return path.split("/").pop();
 }
 
-function createFolderNode(name, node) {
+function createFileNode(name, fullPath) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "workflow-file-button";
+  btn.textContent = name;
+
+  btn.addEventListener("click", async () => {
+    try {
+      await loadWorkflow(fullPath);
+    } catch (err) {
+      alert("Failed to load workflow: " + err.message);
+    }
+  });
+
+  return btn;
+}
+
+
+function createFolderNode(name) {
   const details = document.createElement("details");
   details.className = "workflow-folder-node";
   details.open = true;
 
   const summary = document.createElement("summary");
   summary.textContent = name;
+
   details.appendChild(summary);
-
-  const contents = document.createElement("div");
-  contents.className = "workflow-folder-contents";
-  contents.appendChild(renderNode(node));
-  details.appendChild(contents);
-
   return details;
 }
 
-function renderNode(node) {
+
+function renderNode(currentPath, node) {
+  const name = getName(node.path);
   const frag = document.createDocumentFragment();
 
-  const dirNames = Object.keys(node.dirs).sort((a, b) => a.localeCompare(b));
-  dirNames.forEach((dn) => {
-    frag.appendChild(createFolderNode(dn, node.dirs[dn]));
-  });
-
-  if (node.files.length > 0) {
-    const list = document.createElement("div");
-    list.className = "workflow-file-list";
-    node.files
-      .sort((a, b) => a.relativePath.localeCompare(b.relativePath))
-      .forEach((wf) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "workflow-file-button";
-        btn.textContent = `${wf.title} — ${wf.relativePath}`;
-        btn.addEventListener("click", async () => {
-          try {
-            await loadWorkflow(wf.id);
-          } catch (err) {
-            alert("Failed to load workflow: " + err.message);
-          }
-        });
-        list.appendChild(btn);
-      });
-    frag.appendChild(list);
+  // FILE
+  if (!node.items) {
+    frag.appendChild(createFileNode(name, currentPath));
+    return frag;
   }
 
-  if (dirNames.length === 0 && node.files.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "workflow-empty-state";
-    empty.textContent = "No workflows found.";
-    frag.appendChild(empty);
+  // FOLDER
+  const folder = createFolderNode(name);
+  const content = document.createElement("div");
+  content.className = "workflow-folder-contents";
+
+  if (node.items) {
+    for (const child of node.items) {
+      const nextPath = currentPath + "/" + child.path;
+      content.appendChild(
+        renderNode(nextPath, child)
+      );
+    }
   }
+
+  folder.appendChild(content);
+  frag.appendChild(folder);
 
   return frag;
 }
 
 async function renderTree(container) {
   container.innerHTML = "Loading workflows…";
+  console.log("Ran");
+
   try {
-    const workflows = await listWorkflows();
+    console.log("Ran1");
+    const tree = await listDirectory();
+    console.log("Ran2");
+    console.log(tree);
+
+    if (!tree || !tree.path) {
+      throw new Error("Invalid response");
+    }
+
     container.innerHTML = "";
-    const root = buildTree(workflows);
+
     const wrap = document.createElement("div");
     wrap.className = "workflow-tree-container";
-    wrap.appendChild(renderNode(root));
+
+    wrap.appendChild(
+      renderNode(tree.path, tree)
+    );
+
     container.appendChild(wrap);
+
   } catch (err) {
-    container.innerHTML = `<p class="error">Unable to list workflows: ${err.message}</p>`;
+    container.innerHTML =
+      `<p class="error">Unable to list workflows: ${err.message}</p>`;
   }
 }
 

@@ -2,6 +2,8 @@ import asyncio
 import json
 import websockets
 
+
+from fileExplorer import *
 from graphLoader import *
 from engine import *
 from workflowManagement import (
@@ -122,12 +124,11 @@ async def handler(websocket):
                     "requestId": data.get("requestId"),
                 }))
 
-        elif msg_type == "workflow.list":
-            workflows = list_workflows()
+        elif msg_type == "directory.list":
+            directories = list_folder()
             await websocket.send(json.dumps({
-                "type": "workflow.list",
-                "workflows": workflows,
-                "requestId": data.get("requestId"),
+                "type": "directory.list",
+                "paths": directories
             }))
 
         elif msg_type == "workflow.get_last":
