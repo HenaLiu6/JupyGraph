@@ -11,6 +11,8 @@ Graph-based editors are not a new invention. However, many past implementations 
 
 JupyGraph is different. Here, nodes represent your own code blocks. Think of it as Jupyter Notebook, but where nodes can be freely moved and connected across space.
 
+(I am temporarily putting work on this project off, but since I want to use it, I am vibing it now. I'll go back to this later and fix the slop. If nothing else this is helping clarify my design needs)
+
 ## Why JupyGraph?
 
 The primary advantage over traditional Jupyter Notebooks is the superior representation of context.
@@ -72,4 +74,3 @@ This mode also caches the results of a node in its own vtable, meaning you can o
 * Persistent State.
 
 In this mode, the engine maintains a single, global persistent vtable that is updated across all nodes as they run. This behavior is more similar to the standard execution model found in Jupyter Notebook.
-

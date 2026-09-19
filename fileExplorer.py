@@ -2,37 +2,56 @@ import sys
 import json
 from pathlib import Path
 
+VISIBLE_EXTENSIONS = {".py", ".json"}
+IGNORED_DIRS = {
+    ".git",
+    ".hg",
+    ".svn",
+    ".idea",
+    ".vscode",
+    ".venv",
+    "venv",
+    "env",
+    ".env",
+    "__pycache__",
+    "node_modules",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ipynb_checkpoints",
+    ".tox",
+}
 
-def build_tree(path: Path, base: Path):
+
+def should_skip_path(path: Path):
+    if path.name in IGNORED_DIRS:
+        return True
+    if path.name.startswith(".") and path.name not in {".env"}:
+        return True
+    return False
+
+
+def build_tree_entry(path: Path, base: Path):
     rel_path = str(path.relative_to(base)).replace("\\", "/")
-
-    node = {
-        "path": rel_path
-    }
-
+    node = {"path": rel_path}
     if path.is_dir():
-        try:
-            children = sorted(path.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
-            items = [build_tree(child, base) for child in children]
-            if items:
-                node["items"] = items
-        except PermissionError:
-            node["items"] = []
+        node["items"] = []
     return node
 
 
-def list_folder():
-    if len(sys.argv) < 2:
-        return {"error": "No folder provided"}
-
-    root = Path(sys.argv[1]).resolve()
+def list_folder(folder=None):
+    root = Path(folder or (sys.argv[1] if len(sys.argv) >= 2 else Path.cwd())).expanduser().resolve()
 
     if not root.exists():
         return {"error": "Folder does not exist"}
 
-    children = sorted(root.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
+    children = []
+    for child in sorted(root.iterdir(), key=lambda p: (p.is_file(), p.name.lower())):
+        if should_skip_path(child):
+            continue
+        if child.is_dir() or child.suffix.lower() in VISIBLE_EXTENSIONS:
+            children.append(build_tree_entry(child, root))
 
     return {
         "path": str(root).replace("\\", "/"),
-        "items": [build_tree(child, root) for child in children]
+        "items": children,
     }

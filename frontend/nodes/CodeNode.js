@@ -45,15 +45,15 @@ function CodeNode() {
 
 CodeNode.prototype.createCollapsedPreview = function() {
     const preview = document.createElement("div");
+    preview.className = "collapsed-node-preview";
     Object.assign(preview.style, {
         position: "absolute",
         left: "5px",
         width: "200px",
-        color: "#0f0",
         fontFamily: "monospace",
         fontSize: "10px",
-        padding: "6px",
-        overflowY: "auto",
+        padding: "0",
+        overflow: "hidden",
         display: "none",
         pointerEvents: "auto",
         whiteSpace: "pre-wrap",
@@ -122,17 +122,44 @@ CodeNode.prototype.updateCollapsedState = function() {
 
     if (showPreview) {
         const vtab = this.properties.vtab || {};
-        const functions = Object.keys(vtab).filter(key => {
-            const val = vtab[key];
-            return typeof val === 'string' && val.startsWith('<function ');
-        }).map(key => {
-            const match = vtab[key].match(/^<function (\w+)/);
-            return match ? match[1] : key;
+        const entries = [];
+        const seen = new Set();
+
+        Object.entries(vtab).forEach(([key, value]) => {
+            if (typeof value !== 'string') return;
+
+            const normalized = value.trim();
+            let kind = null;
+            let label = null;
+
+            if (normalized.startsWith('<function ')) {
+                kind = 'function';
+                const match = normalized.match(/^<function\s+([\w$]+)/);
+                label = match ? match[1] + '()' : key + '()';
+            } else if (normalized.startsWith('<class ')) {
+                kind = 'class';
+                const match = normalized.match(/^<class\s+['\"]?([\w$.]+)['\"]?>/);
+                label = match ? match[1].split('.').pop() : key;
+            }
+
+            if (!kind || !label || seen.has(`${kind}:${label}`)) return;
+            seen.add(`${kind}:${label}`);
+            entries.push({ kind, label });
         });
-        const text = functions.length ? functions.join('\n') : '(no function declarations)';
-        this.collapsedPreview.textContent = text;
-        const lineCount = text.split('\n').length;
-        const height = Math.max(20, lineCount * 16 + 12);
+
+        const html = entries.length
+            ? entries.map(entry => (
+                '<div class="collapsed-entry ' + entry.kind + '">' +
+                '<span class="collapsed-entry-marker"></span>' +
+                '<span>' + entry.label + '</span>' +
+                '</div>'
+            )).join('')
+            : '<div class="collapsed-entry muted">(no declarations)</div>';
+
+        this.collapsedPreview.innerHTML = html;
+
+        const lineCount = Math.max(1, entries.length || 1);
+        const height = Math.max(24, lineCount * 18 + 12);
         this.collapsedPreview.style.height = `${height}px`;
         this.collapsedPreview.style.bottom = `-${height + 10}px`;
     }

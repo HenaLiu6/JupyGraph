@@ -1,0 +1,289 @@
+{
+  "id": "autosave",
+  "title": "autosave",
+  "updatedAt": 1789301680352,
+  "state": {
+    "last_node_id": 5,
+    "last_link_id": 3,
+    "nodes": [
+      {
+        "id": 2,
+        "type": "basic/code",
+        "pos": [
+          486,
+          247
+        ],
+        "size": [
+          300,
+          220
+        ],
+        "flags": {
+          "collapsed": false
+        },
+        "order": 3,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "in1",
+            "type": "any",
+            "link": 1
+          },
+          {
+            "name": "in2",
+            "type": "any",
+            "link": null
+          }
+        ],
+        "outputs": [
+          {
+            "name": "out",
+            "type": "any",
+            "links": [
+              2
+            ],
+            "slot_index": 0
+          }
+        ],
+        "properties": {
+          "code": "def test():\n    return 6\n\nprint(random.randint(0, 10000))",
+          "vtab": {
+            "test": "<function test at 0x00000161267CD1B0>",
+            "test2": 4716
+          },
+          "stdout": [
+            {
+              "type": "text",
+              "text": "6412"
+            }
+          ]
+        }
+      },
+      {
+        "id": 4,
+        "type": "basic/code",
+        "pos": [
+          -41,
+          744
+        ],
+        "size": [
+          300,
+          220
+        ],
+        "flags": {},
+        "order": 0,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "in1",
+            "type": "any",
+            "link": null
+          }
+        ],
+        "outputs": [
+          {
+            "name": "out",
+            "type": "any",
+            "links": [
+              3
+            ],
+            "slot_index": 0
+          }
+        ],
+        "properties": {
+          "code": "import random\nimport time",
+          "vtab": {
+            "random": "<module 'random' from 'C:\\\\Users\\\\hellf\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python310\\\\lib\\\\random.py'>",
+            "time": "<module 'time' (built-in)>"
+          },
+          "stdout": []
+        }
+      },
+      {
+        "id": 1,
+        "type": "basic/code",
+        "pos": [
+          386,
+          627
+        ],
+        "size": [
+          300,
+          220
+        ],
+        "flags": {
+          "collapsed": false
+        },
+        "order": 2,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "in1",
+            "type": "any",
+            "link": 3
+          },
+          {
+            "name": "in2",
+            "type": "any",
+            "link": null
+          }
+        ],
+        "outputs": [
+          {
+            "name": "out",
+            "type": "any",
+            "links": [
+              1
+            ],
+            "slot_index": 0
+          }
+        ],
+        "properties": {
+          "code": "class testa:\n    a = 5\n\nprint(random.randint(0, 10000))",
+          "vtab": {
+            "test": "<class 'test'>",
+            "testa": "<class 'testa'>",
+            "test2": 3712
+          },
+          "stdout": [
+            {
+              "type": "text",
+              "text": "2227"
+            }
+          ]
+        }
+      },
+      {
+        "id": 5,
+        "type": "basic/code",
+        "pos": [
+          51,
+          312
+        ],
+        "size": [
+          300,
+          220
+        ],
+        "flags": {},
+        "order": 1,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "in1",
+            "type": "any",
+            "link": null
+          }
+        ],
+        "outputs": [
+          {
+            "name": "out",
+            "type": "any",
+            "links": null
+          }
+        ],
+        "properties": {
+          "code": "x = 2\nprint(x*x)",
+          "vtab": {
+            "x": 2
+          },
+          "stdout": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ]
+        }
+      },
+      {
+        "id": 3,
+        "type": "basic/code",
+        "pos": [
+          906,
+          468
+        ],
+        "size": [
+          432.8227289373219,
+          339.39838201349403
+        ],
+        "flags": {},
+        "order": 4,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "in1",
+            "type": "any",
+            "link": 2
+          },
+          {
+            "name": "in2",
+            "type": "any",
+            "link": null
+          }
+        ],
+        "outputs": [
+          {
+            "name": "out",
+            "type": "any",
+            "links": null
+          }
+        ],
+        "properties": {
+          "code": "import random\n\ntest2 = random.randint(0, 10000)\ndef green(x):\n    return x*x\n\ntest3 = testa\nprint(green(5))\nprint(test())\nprint(test3.a)\nfor i in range(100):\n    print(i)\n    time.sleep(1)\n",
+          "vtab": {
+            "random": "<module 'random' from 'C:\\\\Users\\\\hellf\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python310\\\\lib\\\\random.py'>",
+            "test": 7845,
+            "green": "<function green at 0x00000161267CCC10>",
+            "test2": 6617,
+            "test3": "<class 'testa'>"
+          },
+          "stdout": [
+            {
+              "type": "text",
+              "text": "8369"
+            },
+            {
+              "type": "text",
+              "text": "25"
+            },
+            {
+              "type": "text",
+              "text": "6"
+            },
+            {
+              "type": "text",
+              "text": "5"
+            }
+          ]
+        }
+      }
+    ],
+    "links": [
+      [
+        1,
+        1,
+        0,
+        2,
+        0,
+        "any"
+      ],
+      [
+        2,
+        2,
+        0,
+        3,
+        0,
+        "any"
+      ],
+      [
+        3,
+        4,
+        0,
+        1,
+        0,
+        "any"
+      ]
+    ],
+    "groups": [],
+    "config": {},
+    "extra": {},
+    "version": 0.4
+  }
+}

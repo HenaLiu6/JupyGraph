@@ -79,8 +79,7 @@ export function openCodeModal(node) {
   backdrop.style.display = "flex";
   
   setTimeout(() => {
-    const textarea = codeField.textarea;
-    textarea?.focus();
+    codeField?.focus();
   }, 0);
 }
 
@@ -98,6 +97,10 @@ export function closeModal() {
 // Shift+Space toggles the modal for the selected node
 window.addEventListener("keydown", (e) => {
   if (e.shiftKey && e.code === "Space") {
+    if (backdrop?.style.display === "flex" && container?.contains(e.target)) {
+      return;
+    }
+
     e.preventDefault();
 
     const node = getActiveNode();
@@ -110,10 +113,3 @@ window.addEventListener("keydown", (e) => {
     }
   }
 });
-
-// Stop graph canvas from receiving keyboard events while modal is open
-document.addEventListener("keydown", (e) => {
-  if (backdrop?.style.display === "flex") {
-    e.stopImmediatePropagation();
-  }
-}, true);

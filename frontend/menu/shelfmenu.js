@@ -22,6 +22,10 @@ header.innerHTML = `
     <span class="shelf-icon selected-icon"></span>
     <span class="shelf-title selected-title"></span>
   </div>
+  <div class="workflow-save-controls">
+    <span class="workflow-save-status" aria-live="polite">Saved</span>
+    <button class="workflow-save-button" type="button" title="Save workflow">Save</button>
+  </div>
   <button class="shelf-toggle" title="Collapse menu">⯇</button>
 `;
 
@@ -38,11 +42,40 @@ menuContainer.appendChild(contentPanel);
 const selectedIcon  = header.querySelector(".selected-icon");
 const selectedTitle = header.querySelector(".selected-title");
 const toggleButton  = header.querySelector(".shelf-toggle");
+const saveButton = header.querySelector(".workflow-save-button");
+const saveStatus = header.querySelector(".workflow-save-status");
 
 // ─── State ───
 
 let selectedIndex = 0;
 let collapsed = false;
+
+function updateSaveStatus(event) {
+  const detail = event.detail || {};
+  const labels = {
+    unsaved: "Unsaved changes",
+    saving: "Saving…",
+    "draft-saved": "Draft saved",
+    "draft-error": "Draft unavailable",
+    saved: "Saved",
+    error: "Save failed"
+  };
+  saveStatus.textContent = labels[detail.state] || "Saved";
+  saveStatus.title = detail.message || "";
+  saveButton.disabled = detail.state === "saving";
+  saveStatus.className = `workflow-save-status save-${detail.state || "saved"}`;
+}
+
+window.addEventListener("workflow-save-state", updateSaveStatus);
+saveButton.addEventListener("click", async () => {
+  if (!window.workflowManager?.saveCurrentWorkflow) return;
+  updateSaveStatus({ detail: { state: "saving" } });
+  try {
+    await window.workflowManager.saveCurrentWorkflow();
+  } catch (error) {
+    updateSaveStatus({ detail: { state: "error", message: error.message } });
+  }
+});
 
 // ─── Build menu items from panel metadata ───
 

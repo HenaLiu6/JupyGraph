@@ -5,17 +5,21 @@
   <title>Graph UI</title>
 
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/editor/editor.main.css">
 
   <!-- LiteGraph -->
   <script src="https://cdn.jsdelivr.net/npm/litegraph.js/build/litegraph.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litegraph.js/css/litegraph.css">
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.min.js"></script>
 </head>
 <body>
 
 <div id="shelfMenu"></div>
+
+<div id="executionStatus" class="execution-status" hidden>
+  <span id="executionStatusLabel" class="execution-status-label">Queue 0</span>
+  <button id="stopExecutionBtn" type="button" title="Stop all executions" aria-label="Stop all executions">×</button>
+</div>
 
 <canvas id="graph"></canvas>
 

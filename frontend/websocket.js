@@ -3,6 +3,8 @@ class WSClient {
     this.ws = new WebSocket(url);
     this.messageListeners = [];
     this.sendQueue = [];
+    this.requestId = 0;
+    this.pendingRequests = new Map();
 
     this.ws.onopen = () => {
       console.log("WS connected");
@@ -16,6 +18,30 @@ class WSClient {
       const data = JSON.parse(event.data);
       this.onMessage(data);
       this.messageListeners.forEach((listener) => listener(data));
+      if (data && data.requestId !== undefined) {
+        const pending = this.pendingRequests.get(data.requestId);
+        if (pending) {
+          this.pendingRequests.delete(data.requestId);
+          if (data.type === "workflow.error" || data.type === "python.error" ||
+              data.type === "execution.error" || data.type === "protocol.error") {
+            pending.reject(new Error(data.message || "Server error"));
+          } else {
+            pending.resolve(data);
+          }
+        }
+      }
+    };
+
+    this.ws.onclose = () => {
+      const error = new Error("WebSocket connection closed");
+      for (const pending of this.pendingRequests.values()) {
+        pending.reject(error);
+      }
+      this.pendingRequests.clear();
+    };
+
+    this.ws.onerror = () => {
+      // onclose performs the rejection so callers receive one consistent error.
     };
 
     this.onMessage = () => {};
@@ -41,6 +67,10 @@ class WSClient {
     this.send({ type: "execute_connected", graph: graphJSON });
   }
 
+  sendStopExecution() {
+    this.send({ type: "execution.stop" });
+  }
+
   send(payload) {
     const message = JSON.stringify(payload);
     if (this.ws.readyState === WebSocket.OPEN) {
@@ -48,6 +78,33 @@ class WSClient {
     } else {
       this.sendQueue.push(message);
     }
+  }
+
+  request(type, payload = {}, timeout = 10000) {
+      this.requestId += 1;
+      const requestId = this.requestId;
+      return new Promise((resolve, reject) => {
+        const timer = window.setTimeout(() => {
+          if (this.pendingRequests.delete(requestId)) {
+            reject(new Error(`Request "${type}" timed out`));
+          }
+        }, timeout);
+        this.pendingRequests.set(requestId, {
+          resolve: (value) => { window.clearTimeout(timer); resolve(value); },
+          reject: (error) => { window.clearTimeout(timer); reject(error); }
+        });
+        this.send({ type, requestId, ...payload });
+      });
+    }
+
+  discoverPython(workspace) {
+    return this.request("python.environments", workspace ? { workspace } : {});
+  }
+
+  selectPython(interpreter, workspace) {
+    const payload = { interpreter };
+    if (workspace) payload.workspace = workspace;
+    return this.request("python.select_interpreter", payload);
   }
 }
 

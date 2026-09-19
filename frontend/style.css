@@ -14,7 +14,103 @@ html, body {
   left: 260px;
   width: calc(100% - 260px);
   height: 100%;
+  z-index: 1;
   transition: left 0.2s ease, width 0.2s ease;
+}
+
+#shelfMenu {
+  position: relative;
+  z-index: 30;
+}
+
+.execution-status {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 10px;
+  background: #3a1f1f;
+  border: 1px solid #a94442;
+  border-radius: 4px;
+  color: #ffd7d7;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.execution-status[hidden] {
+  display: none;
+}
+
+#stopExecutionBtn {
+  min-width: 30px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #f08080;
+  border-radius: 3px;
+  background: #6b2929;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+#stopExecutionBtn:hover {
+  background: #8f3838;
+}
+
+.collapsed-node-preview {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: #dfe7ff;
+  box-shadow: none;
+  padding: 0;
+  overflow: hidden;
+}
+
+.collapsed-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collapsed-entry.muted {
+  color: rgba(223, 231, 255, 0.72);
+  font-style: italic;
+}
+
+.collapsed-entry-marker {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.collapsed-entry.function .collapsed-entry-marker {
+  background: rgba(96, 165, 250, 0.95);
+  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.28);
+}
+
+.collapsed-entry.class .collapsed-entry-marker {
+  background: rgba(192, 132, 252, 0.95);
+  box-shadow: 0 0 0 1px rgba(192, 132, 252, 0.25);
+}
+
+.collapsed-entry.function {
+  color: #dbeafe;
+}
+
+.collapsed-entry.class {
+  color: #ede9fe;
 }
 
 
@@ -77,7 +173,8 @@ html, body {
 }
 
 body.shelf-collapsed .shelf-menu-content,
-body.shelf-collapsed .shelf-selected {
+body.shelf-collapsed .shelf-selected,
+body.shelf-collapsed .workflow-save-controls {
   display: none;
 }
 
@@ -91,6 +188,48 @@ body.shelf-collapsed .shelf-selected {
   background: var(--shelf-header-bg);
   flex-shrink: 0;
   gap: 8px;
+}
+
+.workflow-save-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.workflow-save-status {
+  max-width: 92px;
+  overflow: hidden;
+  color: var(--shelf-text-muted);
+  font-size: 0.72em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-save-status.save-unsaved,
+.workflow-save-status.save-error,
+.workflow-save-status.save-draft-error {
+  color: #f59e0b;
+}
+
+.workflow-save-button {
+  padding: 3px 7px;
+  border: 1px solid var(--shelf-input-border);
+  border-radius: 4px;
+  background: var(--shelf-file-bg);
+  color: var(--shelf-text);
+  cursor: pointer;
+  font-size: 0.75em;
+}
+
+.workflow-save-button:hover {
+  border-color: var(--shelf-accent);
+}
+
+.workflow-save-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .shelf-selected {
@@ -344,6 +483,54 @@ body.shelf-collapsed .shelf-selected {
   padding: 40px 12px;
   font-style: italic;
   font-size: 0.9em;
+}
+
+/* ============================================
+   PYTHON SETTINGS
+   ============================================ */
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--shelf-text-muted);
+  font-size: 0.85em;
+}
+
+.settings-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 8px;
+  border: 1px solid var(--shelf-input-border);
+  border-radius: 4px;
+  background: var(--shelf-input-bg);
+  color: var(--shelf-text);
+}
+
+.settings-button {
+  padding: 7px 10px;
+  border: 1px solid var(--shelf-accent);
+  border-radius: 4px;
+  background: var(--shelf-accent);
+  color: var(--shelf-bg);
+  cursor: pointer;
+}
+
+.settings-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.settings-status {
+  color: var(--shelf-text-muted);
+  font-size: 0.85em;
+  line-height: 1.4;
 }
 
 /* ============================================

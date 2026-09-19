@@ -13,10 +13,12 @@ const graph = new LGraph();
 const canvas = new LGraphCanvas(canvasEl, graph);
 
 const workflowManager = initWorkflowManager(wsClient, graph);
+const stopExecutionBtn = document.getElementById("stopExecutionBtn");
 
 graph.start();
 initDOMLayer(canvas, graph);
 window.workflowManager = workflowManager;
+window.dispatchEvent(new Event("workflow-manager-ready"));
 
 async function loadLastWorkflow() {
   try {
@@ -27,9 +29,6 @@ async function loadLastWorkflow() {
 }
 
 loadLastWorkflow();
-window.setInterval(() => {
-  workflowManager.saveCurrentWorkflow().catch(() => {});
-}, 5000);
 
 
 
@@ -111,18 +110,41 @@ function runGraph() {
 // Receive results
 // =========================
 wsClient.onMessage = (data) => {
+  const executionStatus = document.getElementById("executionStatus");
+  const executionStatusLabel = document.getElementById("executionStatusLabel");
+  if (data.type === "execution.started") {
+    executionStatus.hidden = false;
+    executionStatusLabel.textContent = `Queue ${data.queueLength || 0}`;
+    if (stopExecutionBtn) stopExecutionBtn.disabled = false;
+  } else if (data.type === "execution.queued") {
+    executionStatus.hidden = false;
+    executionStatusLabel.textContent = `Queue ${data.position || 0}`;
+    if (stopExecutionBtn) stopExecutionBtn.disabled = false;
+  } else if (data.type === "execution.completed" ||
+             data.type === "execution.stopped" ||
+             data.type === "execution.error") {
+    executionStatus.hidden = true;
+    if (stopExecutionBtn) stopExecutionBtn.disabled = false;
+  }
+
   if (data.type === "done" || data.type === "node.update") {
     for (let node of graph._nodes) {
-      const state = data.nodeStates[node.id];
-      if (state) {
-        if (state.vtab) {
-          node.properties.vtab = state.vtab;
-        }
-        if (typeof state.stdout !== 'undefined') {
-          node.properties.stdout = state.stdout;
-        }
-        if (node.updateDisplay) node.updateDisplay();
+      const state = data.nodeStates && data.nodeStates[node.id];
+      if (!state) continue;
+
+      const previousVtab = node.properties.vtab || {};
+      if (state.vtab !== undefined) {
+        const nextVtab = Object.keys(state.vtab || {}).length
+          ? { ...previousVtab, ...state.vtab }
+          : previousVtab;
+        node.properties.vtab = nextVtab;
       }
+
+      if (typeof state.stdout !== 'undefined') {
+        node.properties.stdout = state.stdout;
+      }
+
+      if (node.updateDisplay) node.updateDisplay();
     }
 
     graph.setDirtyCanvas(true);
@@ -207,6 +229,13 @@ document.addEventListener("keydown", (e) => {
 const runBtn = document.getElementById("runBtn");
 if (runBtn) {
   runBtn.onclick = runGraph;
+}
+
+if (stopExecutionBtn) {
+  stopExecutionBtn.onclick = () => {
+    stopExecutionBtn.disabled = true;
+    wsClient.sendStopExecution();
+  };
 }
 
 const addNodeBtn = document.getElementById("addNodeBtn");

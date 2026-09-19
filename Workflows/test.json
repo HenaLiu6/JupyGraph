@@ -1,0 +1,57 @@
+{
+  "id": "test",
+  "title": "test",
+  "updatedAt": 1788092068284,
+  "state": {
+    "last_node_id": 1,
+    "last_link_id": 0,
+    "nodes": [
+      {
+        "id": 1,
+        "type": "basic/code",
+        "pos": [
+          239,
+          348
+        ],
+        "size": [
+          300,
+          220
+        ],
+        "flags": {},
+        "order": 0,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "in1",
+            "type": "any",
+            "link": null
+          }
+        ],
+        "outputs": [
+          {
+            "name": "out",
+            "type": "any",
+            "links": null
+          }
+        ],
+        "properties": {
+          "code": "x = 2\nprint(x*x)",
+          "vtab": {
+            "x": 2
+          },
+          "stdout": [
+            {
+              "type": "text",
+              "text": "4"
+            }
+          ]
+        }
+      }
+    ],
+    "links": [],
+    "groups": [],
+    "config": {},
+    "extra": {},
+    "version": 0.4
+  }
+}

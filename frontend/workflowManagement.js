@@ -3,6 +3,9 @@ let graphRef = null;
 let requestId = 0;
 const pendingRequests = new Map();
 let saveTimer = null;
+let saveState = "saved";
+let saveInFlight = null;
+let saveRequestedWhileBusy = false;
 
 // ─── Which real workflow is currently being edited (null = new/unsaved) ───
 let currentWorkflowId = null;
@@ -11,22 +14,22 @@ let currentWorkflowTitle = null;
 const AUTOSAVE_ID = "autosave";
 const AUTOSAVE_TITLE = "Autosave";
 
+function publishSaveState(state, message = "") {
+  saveState = state;
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("workflow-save-state", {
+      detail: { state, message }
+    }));
+  }
+}
+
 // ─── Low-level WebSocket request helper ───
 
 function sendRequest(type, payload = {}) {
-  requestId += 1;
-  const request = { type, requestId, ...payload };
-
-  return new Promise((resolve, reject) => {
-    pendingRequests.set(requestId, { resolve, reject });
-    wsClientRef.send(request);
-    window.setTimeout(() => {
-      if (pendingRequests.has(requestId)) {
-        pendingRequests.delete(requestId);
-        reject(new Error(`Workflow request "${type}" timed out`));
-      }
-    }, 5000);
-  });
+  if (!wsClientRef || typeof wsClientRef.request !== "function") {
+    return Promise.reject(new Error("Workflow manager is not connected to the server yet."));
+  }
+  return wsClientRef.request(type, payload, 5000);
 }
 
 function handleServerMessage(data) {
@@ -67,26 +70,36 @@ function connectNodes(source, outputSlot, target, inputSlot) {
 
 function serializeGraph() {
   if (!graphRef) return null;
-  if (typeof graphRef.serialize === "function") return graphRef.serialize();
+  const state = typeof graphRef.serialize === "function"
+    ? graphRef.serialize()
+    : {
+        // Fallback manual serialization
+        nodes: (graphRef._nodes || []).map((node) => ({
+          id: node.id,
+          type: node.type,
+          properties: node.properties || {},
+          pos: node.pos || [0, 0],
+          size: node.size || undefined,
+          stdout: node.stdout || [],
+        })),
+        links: Object.values(graphRef.links || {}).map((link) => ({
+          origin_id: link.origin_id,
+          origin_slot: link.origin_slot,
+          target_id: link.target_id,
+          target_slot: link.target_slot,
+        })),
+      };
 
-  // Fallback manual serialization
-  const nodes = (graphRef._nodes || []).map((node) => ({
-    id: node.id,
-    type: node.type,
-    properties: node.properties || {},
-    pos: node.pos || [0, 0],
-    size: node.size || undefined,
-    stdout: node.stdout || [],
-  }));
-
-  const links = Object.values(graphRef.links || {}).map((link) => ({
-    origin_id: link.origin_id,
-    origin_slot: link.origin_slot,
-    target_id: link.target_id,
-    target_slot: link.target_slot,
-  }));
-
-  return { nodes, links };
+  // Vtables are runtime/cache state. Outputs remain persisted like notebook
+  // cell output, while omitting vtables keeps saves from growing with imports
+  // and accumulated execution state.
+  return {
+    ...state,
+    nodes: (state.nodes || []).map((node) => {
+      const { vtab, ...properties } = node.properties || {};
+      return { ...node, properties };
+    }),
+  };
 }
 
 function loadGraphState(state) {
@@ -141,9 +154,11 @@ function loadGraphState(state) {
 async function saveToAutosave() {
   const state = serializeGraph();
   if (!state) throw new Error("Graph is not initialized");
-  return await sendRequest("workflow.save", {
+  const response = await sendRequest("workflow.save", {
     workflow: { id: AUTOSAVE_ID, title: AUTOSAVE_TITLE, state },
   });
+  publishSaveState("draft-saved");
+  return response;
 }
 
 /**
@@ -153,6 +168,7 @@ async function loadFromAutosave() {
   const response = await sendRequest("workflow.load", { id: AUTOSAVE_ID });
   if (response && response.workflow && response.workflow.state) {
     loadGraphState(response.workflow.state);
+    publishSaveState("saved");
   }
   return response;
 }
@@ -215,15 +231,18 @@ export async function loadLastWorkflow() {
       },
     });
     loadGraphState(response.workflow.state);
+    publishSaveState("saved");
   }
   return response;
 }
 
-export async function listDirectory() {
-  console.log("Ran1.5")
-  const response = await sendRequest("directory.list");
-  console.log("Response")
-  return response.paths || [];
+export async function listDirectory(folderPath = null) {
+  const response = await sendRequest("directory.list", folderPath ? { folder: folderPath } : {});
+  const tree = response?.paths || response;
+  if (tree?.error) {
+    throw new Error(tree.error);
+  }
+  return tree;
 }
 
 /**
@@ -243,6 +262,7 @@ export async function loadWorkflow(id) {
       },
     });
     loadGraphState(response.workflow.state);
+    publishSaveState("saved");
   }
   return response;
 }
@@ -276,10 +296,17 @@ export async function saveWorkflow(id = currentWorkflowId, title = currentWorkfl
   if (!state) throw new Error("Graph is not initialized");
 
   // Save to the real workflow ID
-  const response = await sendRequest("workflow.save", {
-    workflow: { id, title: title || id, state },
-  });
-  return response;
+  publishSaveState("saving");
+  try {
+    const response = await sendRequest("workflow.save", {
+      workflow: { id, title: title || id, state },
+    });
+    publishSaveState("saved");
+    return response;
+  } catch (error) {
+    publishSaveState("error", error.message);
+    throw error;
+  }
 }
 
 /**
@@ -292,9 +319,28 @@ export async function saveCurrentWorkflow() {
 /**
  * Debounced autosave to the autosave slot only (does NOT touch the real workflow).
  */
-export function scheduleSave(delay = 300) {
+export function scheduleSave(delay = 1000) {
   if (saveTimer) clearTimeout(saveTimer);
+  if (saveInFlight) {
+    saveRequestedWhileBusy = true;
+    publishSaveState("unsaved");
+    return;
+  }
+  publishSaveState("unsaved");
   saveTimer = window.setTimeout(() => {
-    saveToAutosave().catch(() => {});
+    saveTimer = null;
+    publishSaveState("saving");
+    const save = async () => {
+      await saveToAutosave();
+    };
+    saveInFlight = save().catch((error) => {
+      publishSaveState("draft-error", error.message);
+    }).finally(() => {
+      saveInFlight = null;
+      if (saveRequestedWhileBusy) {
+        saveRequestedWhileBusy = false;
+        scheduleSave(0);
+      }
+    });
   }, delay);
 }

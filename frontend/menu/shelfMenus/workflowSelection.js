@@ -13,14 +13,23 @@ function getName(path) {
 }
 
 function createFileNode(name, fullPath) {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "workflow-file-button";
-  btn.textContent = name;
+  const isWorkflow = name.toLowerCase().endsWith(".json");
+  const btn = document.createElement(isWorkflow ? "button" : "div");
+  if (isWorkflow) btn.type = "button";
+  btn.className = `workflow-file-button${isWorkflow ? "" : " workflow-code-file"}`;
+  btn.textContent = isWorkflow ? name : `${name} (Python source)`;
+
+  if (!isWorkflow) return btn;
 
   btn.addEventListener("click", async () => {
     try {
-      await loadWorkflow(fullPath);
+      const workflowPath = fullPath.replace(/\\/g, "/");
+      const marker = "/workflows/";
+      const markerIndex = workflowPath.toLowerCase().lastIndexOf(marker);
+      const workflowId = markerIndex >= 0
+        ? workflowPath.slice(markerIndex + marker.length).replace(/\.json$/i, "")
+        : name.replace(/\.json$/i, "");
+      await loadWorkflow(workflowId);
     } catch (err) {
       alert("Failed to load workflow: " + err.message);
     }
@@ -30,13 +39,38 @@ function createFileNode(name, fullPath) {
 }
 
 
-function createFolderNode(name) {
+function createFolderNode(name, folderPath) {
   const details = document.createElement("details");
   details.className = "workflow-folder-node";
-  details.open = true;
+  details.dataset.folderPath = folderPath;
+  details.dataset.loaded = "false";
+  details.open = false;
 
   const summary = document.createElement("summary");
   summary.textContent = name;
+
+  details.addEventListener("toggle", async () => {
+    if (!details.open || details.dataset.loaded === "true") return;
+
+    try {
+      const children = await listDirectory(folderPath);
+      const content = details.querySelector(".workflow-folder-contents") || document.createElement("div");
+      content.className = "workflow-folder-contents";
+      content.innerHTML = "";
+
+      for (const child of children.items || []) {
+        const childPath = folderPath ? `${folderPath}/${child.path}` : child.path;
+        content.appendChild(renderNode(childPath, child));
+      }
+
+      if (!details.querySelector(".workflow-folder-contents")) {
+        details.appendChild(content);
+      }
+      details.dataset.loaded = "true";
+    } catch (err) {
+      console.error("Failed to load folder contents", err);
+    }
+  });
 
   details.appendChild(summary);
   return details;
@@ -47,24 +81,29 @@ function renderNode(currentPath, node) {
   const name = getName(node.path);
   const frag = document.createDocumentFragment();
 
-  // FILE
-  if (!node.items) {
+  if (!node.items || node.items.length === 0) {
+    if (node.path && node.path.split("/").some(part => part === "")) {
+      // no-op
+    }
+    if (node.items && node.items.length === 0 && currentPath) {
+      const folder = createFolderNode(name, currentPath);
+      const content = document.createElement("div");
+      content.className = "workflow-folder-contents";
+      folder.appendChild(content);
+      frag.appendChild(folder);
+      return frag;
+    }
     frag.appendChild(createFileNode(name, currentPath));
     return frag;
   }
 
-  // FOLDER
-  const folder = createFolderNode(name);
+  const folder = createFolderNode(name, currentPath);
   const content = document.createElement("div");
   content.className = "workflow-folder-contents";
 
-  if (node.items) {
-    for (const child of node.items) {
-      const nextPath = currentPath + "/" + child.path;
-      content.appendChild(
-        renderNode(nextPath, child)
-      );
-    }
+  for (const child of node.items) {
+    const nextPath = currentPath + "/" + child.path;
+    content.appendChild(renderNode(nextPath, child));
   }
 
   folder.appendChild(content);
@@ -75,16 +114,18 @@ function renderNode(currentPath, node) {
 
 async function renderTree(container) {
   container.innerHTML = "Loading workflows…";
-  console.log("Ran");
 
   try {
-    console.log("Ran1");
-    const tree = await listDirectory();
-    console.log("Ran2");
-    console.log(tree);
+    if (!window.workflowManager) {
+      await new Promise((resolve) => {
+        window.addEventListener("workflow-manager-ready", resolve, { once: true });
+      });
+    }
 
-    if (!tree || !tree.path) {
-      throw new Error("Invalid response");
+    const tree = await listDirectory();
+
+    if (!tree || typeof tree !== "object" || !tree.path) {
+      throw new Error("The server returned no workspace folder. Start the server with a workspace path.");
     }
 
     container.innerHTML = "";

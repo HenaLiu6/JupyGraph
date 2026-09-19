@@ -14,6 +14,7 @@ export function initDOMLayer(canvas, graph) {
     position: "absolute",
     top: 0,
     left: 0,
+    zIndex: 2,
     transformOrigin: "0 0",
     pointerEvents: "none"
   });

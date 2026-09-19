@@ -1,16 +1,38 @@
 import json
 import re
+import sys
 import time
 from pathlib import Path
 
-WORKFLOW_DIR = Path(__file__).resolve().parent / "workflows"
-LAST_WORKFLOW_FILE = WORKFLOW_DIR / ".lastworkflow"
+_DEFAULT_WORKFLOW_ROOT = Path(sys.argv[1]).expanduser().resolve() if len(sys.argv) > 1 else Path.cwd().resolve()
+WORKFLOW_ROOT = _DEFAULT_WORKFLOW_ROOT
 CURRENT_WORKFLOW_ID = "autosave"
 VALID_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
+def workflow_storage_root():
+    return WORKFLOW_ROOT
+
+
+def set_workflow_root(folder):
+    global WORKFLOW_ROOT
+    if folder is None:
+        WORKFLOW_ROOT = Path.cwd().resolve()
+    else:
+        WORKFLOW_ROOT = Path(folder).expanduser().resolve()
+    return WORKFLOW_ROOT
+
+
+def workflow_dir():
+    return workflow_storage_root()
+
+
+def last_workflow_file():
+    return workflow_storage_root() / ".lastworkflow"
+
+
 def ensure_workflow_dir():
-    WORKFLOW_DIR.mkdir(parents=True, exist_ok=True)
+    workflow_dir().mkdir(parents=True, exist_ok=True)
 
 
 def normalize_workflow_id(workflow_id):
@@ -36,7 +58,7 @@ def normalize_workflow_id(workflow_id):
 
 def workflow_path(workflow_id):
     normalized = normalize_workflow_id(workflow_id)
-    path = WORKFLOW_DIR
+    path = workflow_dir()
     for segment in normalized.split("/"):
         path = path / segment
     return path.with_suffix(".json")
@@ -75,16 +97,16 @@ def load_workflow(workflow_id):
 def list_workflows():
     ensure_workflow_dir()
     workflows = []
-    for path in WORKFLOW_DIR.rglob("*.json"):
+    for path in workflow_dir().rglob("*.json"):
         if path.name == f"{CURRENT_WORKFLOW_ID}.json":
             continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
             workflows.append({
-                "id": data.get("id", path.relative_to(WORKFLOW_DIR).with_suffix("").as_posix()),
+                "id": data.get("id", path.relative_to(workflow_dir()).with_suffix("").as_posix()),
                 "title": data.get("title", path.stem),
                 "updatedAt": data.get("updatedAt", path.stat().st_mtime_ns // 1000000),
-                "relativePath": path.relative_to(WORKFLOW_DIR).as_posix(),
+                "relativePath": path.relative_to(workflow_dir()).as_posix(),
             })
         except Exception:
             continue
@@ -92,9 +114,9 @@ def list_workflows():
 
 
 def get_saved_last_workflow_id():
-    if LAST_WORKFLOW_FILE.exists():
+    if last_workflow_file().exists():
         try:
-            contents = LAST_WORKFLOW_FILE.read_text(encoding="utf-8").strip()
+            contents = last_workflow_file().read_text(encoding="utf-8").strip()
             if contents:
                 return normalize_workflow_id(contents)
         except Exception:
@@ -105,7 +127,7 @@ def get_saved_last_workflow_id():
 def set_last_workflow_id(workflow_id):
     ensure_workflow_dir()
     workflow_id = normalize_workflow_id(workflow_id)
-    LAST_WORKFLOW_FILE.write_text(workflow_id, encoding="utf-8")
+    last_workflow_file().write_text(workflow_id, encoding="utf-8")
 
 
 def get_last_workflow_id():
